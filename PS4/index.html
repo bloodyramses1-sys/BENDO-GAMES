@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BENDO GAMES</title>
+    <title>BENDOGAMES</title>
     <style>
         * {
             box-sizing: border-box;
@@ -90,7 +90,7 @@
         .game-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #eeeeee;
             line-height: 1.4;
         }
@@ -98,22 +98,65 @@
         .game-details {
             font-size: 12px;
             color: #aaaaaa;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .title-id-badge {
+            display: inline-block;
+            background-color: #393e46;
+            color: #00adb5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .download-btn {
+            width: 100%;
             display: inline-block;
             background-color: #00adb5;
             color: #ffffff;
             text-decoration: none;
-            padding: 10px 15px;
+            padding: 10px 5px;
             border-radius: 6px;
             font-weight: bold;
+            font-size: 14px;
             transition: background 0.3s;
+            text-transform: uppercase;
+            text-align: center;
+            border: none;
+            cursor: pointer;
         }
 
         .download-btn:hover {
             background-color: #007b80;
+        }
+
+        .copy-btn {
+            width: 100%;
+            background-color: #393e46;
+            color: #eeeeee;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 5px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #4f5663;
         }
 
         #status-msg {
@@ -127,11 +170,11 @@
 <body>
 
     <header>
-        <h1>BENDO GAMES</h1>
-        <input type="text" id="search-input" placeholder="ابحث عن اسم اللعبة...">
+        <h1>BENDOGAMES</h1>
+        <input type="text" id="search-input" placeholder="Search by game title or CUSA ID...">
     </header>
 
-    <div id="status-msg">جاري تحميل الألعاب...</div>
+    <div id="status-msg">Loading games...</div>
     <div class="games-grid" id="games-container"></div>
 
     <script>
@@ -143,7 +186,7 @@
                 const response = await fetch('GAMES.json?v=' + Date.now());
                 
                 if (!response.ok) {
-                    throw new Error('تعذر العثور على ملف GAMES.json');
+                    throw new Error('Failed to load GAMES.json');
                 }
 
                 const jsonContent = await response.json();
@@ -157,7 +200,8 @@
                         if (item && typeof item === 'object') {
                             allGames.push({
                                 download_url: key,
-                                name: item.name || 'بدون عنوان',
+                                name: item.name || 'Untitled',
+                                title_id: item.title_id || '',
                                 cover_url: item.cover_url || '',
                                 region: item.region || '',
                                 version: item.version || ''
@@ -167,7 +211,7 @@
                 }
 
                 if (allGames.length === 0) {
-                    statusDiv.innerText = "الملف فارغ أو لا يحتوي على ألعاب.";
+                    statusDiv.innerText = "No games found in the file.";
                     return;
                 }
 
@@ -175,9 +219,9 @@
                 displayGames(allGames);
 
             } catch (error) {
-                console.error("خطأ:", error);
+                console.error("Error:", error);
                 statusDiv.style.color = '#ff4d4d';
-                statusDiv.innerHTML = `<b>تنبيه:</b> ${error.message}`;
+                statusDiv.innerHTML = `<b>Error:</b> ${error.message}`;
             }
         }
 
@@ -186,7 +230,7 @@
             container.innerHTML = '';
 
             if (games.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">لا توجد ألعاب متطابقة مع البحث.</p>';
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No matching games found.</p>';
                 return;
             }
 
@@ -205,15 +249,25 @@
 
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'game-info';
+
+                let cleanFileName = game.name;
+                if (game.title_id) cleanFileName += ` [${game.title_id}]`;
+                if (game.region) cleanFileName += ` [${game.region}]`;
+                if (game.version) cleanFileName += ` [v${game.version}]`;
+
                 infoDiv.innerHTML = `
                     <div>
                         <div class="game-title">${game.name}</div>
                         <div class="game-details">
-                            ${game.region ? `المنطقة: ${game.region} ` : ''}
-                            ${game.version ? `| الإصدار: ${game.version}` : ''}
+                            ${game.title_id ? `<div class="title-id-badge">${game.title_id}</div><br>` : ''}
+                            ${game.region ? `Region: ${game.region} ` : ''}
+                            ${game.version ? `| Version: ${game.version}` : ''}
                         </div>
                     </div>
-                    <a href="${game.download_url}" class="download-btn" target="_blank">تحميل اللعبة</a>
+                    <div class="btn-group">
+                        <a href="${game.download_url}" class="download-btn" target="_blank">Download</a>
+                        <button class="copy-btn" onclick="copyName('${cleanFileName.replace(/'/g, "\\'")}', this)">Copy Name</button>
+                    </div>
                 `;
 
                 if (game.cover_url) {
@@ -224,10 +278,23 @@
             });
         }
 
+        function copyName(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.backgroundColor = "#00adb5";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.backgroundColor = "#393e46";
+                }, 1500);
+            });
+        }
+
         document.getElementById('search-input').addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredGames = allGames.filter(game => 
-                game.name.toLowerCase().includes(searchTerm)
+                game.name.toLowerCase().includes(searchTerm) || 
+                game.title_id.toLowerCase().includes(searchTerm)
             );
             displayGames(filteredGames);
         });
